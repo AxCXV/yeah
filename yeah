@@ -1,7 +1,24 @@
-<ChartCard title={formatTitleWithDateRange("Submitted RADP Reports", filters.dateRange)}>
-  <CustomShapeBarChart 
-    data={metricsData.submitted_reports[filters.period]} 
-    chartType="submitted"
-    period={filters.period}
-  />
-</ChartCard>
+const xTickFormatter = (tick) => {
+  if (!tick) return '';
+  try {
+    const date = parseISO(tick);
+    
+    if (period === 'daily') {
+      // Formato día/mes: "Apr 1"
+      return format(date, 'MMM d');
+    } else if (period === 'weekly') {
+      // Solo número de semana: "W15"
+      return `W${getISOWeek(date)}`;
+    } else if (period === 'monthly') {
+      // Solo mes y año: "Apr 2024"
+      return format(date, 'MMM yyyy');
+    } else if (period === 'yearly') {
+      // Solo año: "2024"
+      return format(date, 'yyyy');
+    }
+
+    return tick; // fallback
+  } catch {
+    return tick;
+  }
+};
