@@ -1,0 +1,88 @@
+import React from 'react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LabelList,
+  Brush
+} from 'recharts';
+import { scaleLinear } from 'd3-scale';
+import { interpolateRgbBasis } from 'd3-interpolate';
+import { format, parseISO, getISOWeek } from 'date-fns';
+
+const CustomShapeBarChart = ({
+  data,
+  xKey = 'period',
+  yKey = 'count',
+  chartType = 'submitted',
+  period = 'daily',
+}) => {
+  if (!data || data.length === 0) return <p>No data</p>;
+
+  const counts = data.map((item) => item[yKey]);
+  const minCount = Math.min(...counts, 0);
+  const maxCount = Math.max(...counts, 1);
+
+  const forwardColors = ['#4CAF50', '#FFEB3B', '#F44336'];
+  const reversedColors = [...forwardColors].reverse();
+  const selectedColors = chartType === 'submitted' ? forwardColors : reversedColors;
+  const colorInterpolator = interpolateRgbBasis(selectedColors);
+  const colorScale = scaleLinear().domain([minCount, maxCount]).range([0, 1]);
+
+  const RoundedBar = (props) => {
+    const { x, y, width, height, payload } = props;
+    const count = payload[yKey];
+    const fill = colorInterpolator(colorScale(count));
+    return (
+      <rect x={x} y={y} width={width} height={height} rx={10} ry={10} fill={fill} />
+    );
+  };
+
+  const xTickFormatter = (tick) => {
+    if (!tick) return '';
+    try {
+      const date = parseISO(tick);
+      if (period === 'daily') return format(date, 'MMM d');
+      if (period === 'weekly') return `W${getISOWeek(date)}`;
+      if (period === 'monthly') return format(date, 'MMM yy');
+      if (period === 'yearly') return format(date, 'yyyy');
+      return tick;
+    } catch {
+      return tick;
+    }
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <div style={{ minWidth: `${data.length * 30}px`, height: '500px' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart 
+            data={data} 
+            margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey={xKey} 
+              tickFormatter={xTickFormatter}
+              angle={-45}
+              textAnchor="end"
+              height={70}
+            />
+            <YAxis domain={[0, Math.max(maxCount, 1)]} allowDecimals={false} />
+            <Tooltip labelFormatter={xTickFormatter} />
+            <Bar dataKey={yKey} shape={<RoundedBar />} label={{ position: 'top' }}>
+              <LabelList dataKey={yKey} position="top" />
+            </Bar>
+            <Brush dataKey={xKey} height={20} stroke="#8884d8" tickFormatter={xTickFormatter} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+export default CustomShapeBarChart;
